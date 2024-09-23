@@ -1,0 +1,122 @@
+version: 2.1
+
+orbs:
+  aws-eks: circleci/aws-eks@2.2.0
+  aws-ecr: circleci/aws-ecr@7.2.0
+  kubernetes: circleci/kubernetes@1.3.1
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:18.20.4
+        auth:
+          username: $DOCKER_USER_NAME
+          password: $DOCKER_USER_PASSWORD
+    working_directory: ~/repo
+
+jobs:
+  build_and_push:
+    executor: node-executor
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: yarn install
+      - run:
+          name: Create .env file and set environments
+          command: |
+            echo "PORT=${PORT}" > .env
+            echo "DATABASE_URL=${DATABASE_URL}" >> .env
+            echo "BROVIDER_URL=${BROVIDER_URL}" >> .env
+      - setup_remote_docker:
+          version: docker23
+      - aws-ecr/ecr-login
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t $ECR_REPO_NAME .
+            docker tag $ECR_REPO_NAME:latest $AWS_ECR_ACCOUNT_URL:latest
+      - run:
+          name: Push Docker image to ECR for dev
+          command: |
+            docker push $AWS_ECR_ACCOUNT_URL:latest
+
+  deploy_to_eks:
+    executor: node-executor
+    parameters:
+      docker-image-name:
+        description: |
+          Name of the docker image to be deployed
+        type: string
+      https_ssl_arn:
+        description: |
+          Name of the ssl arn for apply https protocol
+        type: string
+      version-info:
+        description: |
+          App version information
+        type: string
+        default: "0.0.1"
+    steps:
+      - checkout
+      - aws-eks/update-kubeconfig-with-authenticator:
+            cluster-name: $EKS_CLUSTER_NAME
+            install-kubectl: true
+            aws-region: $AWS_REGION
+      - run:
+          name: Create deployment manifest
+          command: |
+            BUILD_DATE=$(date '+%Y%m%d%H%M%S')
+            cat deployment/app-deployment.yaml.template |\
+            sed "s|DOCKER_IMAGE_NAME|<< parameters.docker-image-name >>|\
+            g;s|BUILD_DATE_VALUE|$BUILD_DATE|g;s|VERSION_INFO_VALUE|\
+            << parameters.version-info >>|g" > deployment/app-deployment.yaml
+      - run:
+          name: Set Env Variables at app-service.yaml
+          command: |
+            sed -i "s|HTTPS_SSL_ARN|<< parameters.https_ssl_arn >>|g" deployment/app-service.yaml
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "deployment/app-deployment.yaml"
+          get-rollout-status: true
+          resource-name: deployment/score-api
+          namespace: score-api
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "deployment/app-service.yaml"
+
+workflows:
+  version: 2
+  build_and_deploy_dev:
+    jobs:
+      - build_and_push:
+          context: snapshot-score-api-dev
+          filters:
+            branches:
+              only: dev
+      - deploy_to_eks:
+          requires:
+            - build_and_push
+          context: snapshot-score-api-dev
+          docker-image-name: $AWS_ECR_ACCOUNT_URL
+          https_ssl_arn: $HTTPS_SSL_ARN
+          version-info: "0.0.1"
+          filters:
+            branches:
+              only: dev
+
+  build_and_deploy_prod:
+    jobs:
+      - build_and_push:
+          context: snapshot-score-api-prod
+          filters:
+            branches:
+              only: prod
+      - deploy_to_eks:
+          requires:
+            - build_and_push
+          context: snapshot-score-api-prod
+          docker-image-name: $AWS_ECR_ACCOUNT_URL
+          https_ssl_arn: $HTTPS_SSL_ARN
+          version-info: "0.0.1"
+          filters:
+            branches:
+              only: prod

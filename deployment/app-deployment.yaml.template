@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: score-api
+  namespace: score-api
+  labels:
+    app: score-api
+spec:
+  selector:
+    matchLabels:
+      app: score-api
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: score-api
+    spec:
+      containers:
+      - name: app
+        image: DOCKER_IMAGE_NAME
+        resources:
+          requests:
+            cpu: 200m
+            memory: 200Mi
+        env:
+        - name: VERSION_INFO
+          value: "VERSION_INFO_VALUE"
+        - name: BUILD_DATE
+          value: "BUILD_DATE_VALUE"
+        ports:
+        - containerPort: 3003
