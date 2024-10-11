@@ -1,3 +1,5 @@
 {
-  "extends": "@snapshot-labs"
+  "rules": {
+    "import/order": "off"
+  }
 }
