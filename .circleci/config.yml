@@ -28,6 +28,7 @@ jobs:
             echo "PORT=${PORT}" > .env
             echo "DATABASE_URL=${DATABASE_URL}" >> .env
             echo "BROVIDER_URL=${BROVIDER_URL}" >> .env
+            echo "ALLTAHTNODE_API_KEY=${ALLTAHTNODE_API_KEY}" >> .env
       - setup_remote_docker:
           version: docker23
       - aws-ecr/ecr-login
