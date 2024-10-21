@@ -387,9 +387,8 @@ export default function getProvider(
     if (network === '1001') {
       providers[network] = new JsonRpcProvider(`https://kaia-kairos.g.allthatnode.com/full/evm/${process.env.ALLTAHTNODE_API_KEY}`);
     } else if (network === '8217') {
-      // providers[network] = new JsonRpcProvider(`https://kaia-mainnet.g.allthatnode.com/full/evm/${process.env.ALLTAHTNODE_API_KEY}`);
-      providers[network] = new JsonRpcProvider(`https://public-en.node.kaia.io`);
-      // https://public-en.node.kaia.io
+      providers[network] = new JsonRpcProvider(`https://kaia-mainnet.g.allthatnode.com/full/evm/${process.env.ALLTAHTNODE_API_KEY}`);
+      // providers[network] = new JsonRpcProvider(`https://public-en.node.kaia.io`);
     } else {
       console.log('broviderUrl', broviderUrl);
       const url = `${broviderUrl}/${network}`;
