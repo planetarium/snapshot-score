@@ -389,6 +389,7 @@ export default function getProvider(
     } else if (network === '8217') {
       providers[network] = new JsonRpcProvider(`https://kaia-mainnet.g.allthatnode.com/full/evm/${process.env.ALLTAHTNODE_API_KEY}`);
     } else {
+      console.log('broviderUrl', broviderUrl);
       const url = `${broviderUrl}/${network}`;
       providers[network] = new StaticJsonRpcProvider(
         {
