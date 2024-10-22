@@ -64,10 +64,10 @@
     "network": "mainnet",
     "multicall": "0x5f5f0d1b9ff8b3dcace308e39b13b203354906e9",
     "rpc": [
-      "https://public-en.node.kaia.io"
+      "https://archive-en.node.kaia.io"
     ],
     "ws": [
-      "wss://public-en.node.kaia.io/ws"
+      "wss://archive-en.node.kaia.io/ws"
     ],
     "explorer": {
       "url": "https://klaytnscope.com"

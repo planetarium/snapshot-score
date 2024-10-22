@@ -2,7 +2,7 @@ import snapshot from '@snapshot-labs/strategies';
 import { formatBytes32String } from '@ethersproject/strings';
 import { getAddress } from '@ethersproject/address';
 import subgraphs from './snapshot-module/delegationSubgraphs.json';
-import { JsonRpcProvider, StaticJsonRpcProvider } from '@ethersproject/providers';
+import { JsonRpcProvider, StaticJsonRpcProvider, FallbackProvider } from '@ethersproject/providers';
 import disabled from './disabled.json';
 import redis from './redis';
 import { getCurrentBlockNum, sha256 } from './utils';
@@ -385,12 +385,20 @@ export default function getProvider(
   if (!providers[network]) {
     let providerUrl = ''
     if (network === '1001') {
-      providers[network] = new JsonRpcProvider(`https://kaia-kairos.g.allthatnode.com/full/evm/${process.env.ALLTAHTNODE_API_KEY}`);
+      const publicProvider = new JsonRpcProvider(`https://archive-en-kairos.node.kaia.io`);
+      const privateProvider = new JsonRpcProvider(`https://kaia-kairos.g.allthatnode.com/full/evm/${process.env.PROVIDER_API_KEY}`);
+      providers[network] = new FallbackProvider([
+        { provider: publicProvider, priority: 1, weight: 1 },
+        { provider: privateProvider, priority: 2, weight: 1 },
+      ]);
     } else if (network === '8217') {
-      providers[network] = new JsonRpcProvider(`https://kaia-mainnet.g.allthatnode.com/full/evm/${process.env.ALLTAHTNODE_API_KEY}`);
-      // providers[network] = new JsonRpcProvider(`https://public-en.node.kaia.io`);
+      const publicProvider = new JsonRpcProvider(`https://archive-en.node.kaia.io`);
+      const privateProvider = new JsonRpcProvider(`https://kaia.blockpi.network/v1/rpc/${process.env.PROVIDER_API_KEY}`);
+      providers[network] = new FallbackProvider([
+        { provider: publicProvider, priority: 1, weight: 1 },
+        { provider: privateProvider, priority: 2, weight: 1 },
+      ]);
     } else {
-      console.log('broviderUrl', broviderUrl);
       const url = `${broviderUrl}/${network}`;
       providers[network] = new StaticJsonRpcProvider(
         {
